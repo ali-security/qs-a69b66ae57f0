@@ -1,6 +1,7 @@
-name: Require “Allow Edits”
+name: Require "Allow Edits"
 
-on: [pull_request_target]
+on:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -10,9 +11,10 @@ jobs:
     permissions:
       pull-requests: read  # for ljharb/require-allow-edits to check 'allow edits' on PR
 
-    name: "Require “Allow Edits”"
+    name: "Require \"Allow Edits\""
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: ljharb/require-allow-edits@main

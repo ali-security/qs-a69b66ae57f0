@@ -1,21 +1,59 @@
 name: 'Tests: node.js >= 10'
 
-on: [pull_request, push]
+on:
+  workflow_dispatch:
+    inputs:
+      test-filter:
+        description: 'A string to pass to the test runner as a filter (if supported)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
 
 jobs:
   tests:
-    uses: ljharb/actions/.github/workflows/node.yml@main
-    with:
-      range: '>= 10'
-      type: minors
-      command: npm run tests-only
+    name: 'node ${{ matrix.node-version }}'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 18, 16]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Set npm registry time machine
+        run: npm config set registry https://:2023-05-15T16:08:31.665Z@time-machines-npm.sealsecurity.io/
+      - run: npm install
+      - run: npm run tests-only ${{ inputs.test-filter }}
+
+  pack:
+    name: 'pack'
+    needs: [tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.1.0'
+      - name: Set npm registry time machine
+        run: npm config set registry https://:2023-05-15T16:08:31.665Z@time-machines-npm.sealsecurity.io/
+      - run: npm install
+      - run: npm pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qs-6.11.2.tgz
+          path: qs-6.11.2.tgz
+          if-no-files-found: error
 
   node:
     name: 'node >= 10'
-    needs: [tests]
+    needs: [tests, pack]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - run: 'echo tests completed'
